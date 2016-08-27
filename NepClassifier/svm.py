@@ -7,6 +7,7 @@ from sklearn import cross_validation
 from sklearn.utils import shuffle
 
 from hyperopt import fmin, tpe, hp
+from hyperopt import Trials
 
 
 class SVMClassifier():
@@ -34,7 +35,7 @@ class SVMClassifier():
         self.cross_validation_folds = 5
 
     def contruct_cost_function(self, input_matrix, output_matrix):
-        def eval(c):
+        def f(c):
 
             logging.info("Training using c={}".format(c))
 
@@ -52,9 +53,9 @@ class SVMClassifier():
             logging.info("Mean score={}".format(score))
 
             # Return loss
-            return 1-score
+            return 1 - score
 
-        return eval
+        return f
 
     def train(self, documents, labels):
         """
@@ -77,15 +78,18 @@ class SVMClassifier():
         self.input_matrix = self.vectorizer.obtain_feature_matrix(documents)
 
         logging.info("Constructing evaluation function for hyper paramater optimization")
-        eval = self.contruct_cost_function(
+        f = self.contruct_cost_function(
             self.input_matrix,
             labels
         )
 
+        trials = MongoTrials('mongo://localhost:1234/trials_db/jobs')
+
         # Perform hyper paramater optimization
         best_parameters = fmin(
-            fn=eval,
+            fn=f,
             space=hp.lognormal("c", 0, 1),
+            trials=trials,
             algo=tpe.suggest,
             max_evals=self.max_evals,
         )
