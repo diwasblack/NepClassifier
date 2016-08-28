@@ -22,16 +22,29 @@ class Word2VecVectorizer():
 
         self.model = None
 
+    def get_tokens(self, document):
+        """
+        Process the document and return the tokens present
+        """
+
+        return self.stemmer.get_stems(document)
+
     def train(self, documents):
         """
         Train the word2vec for feature extraction on given corpus
         """
 
         document_tokens = [
-            self.stemmer.tokenize(document) for document in documents
+            self.get_tokens(document) for document in documents
         ]
 
-        self.model = word2vec.Word2Vec(document_tokens)
+        self.model = word2vec.Word2Vec(
+            document_tokens,
+            sg=1,
+            size=300,
+            window=10
+        )
+
         self.model.init_sims(replace=True)
 
         self.model.save(self.word2vec_data_path)
@@ -59,7 +72,7 @@ class Word2VecVectorizer():
 
         self.load_model()
 
-        tokens = self.stemmer.tokenize(document)
+        tokens = self.get_tokens(document)
 
         feature_vector = np.zeros(self.no_of_features, dtype="float32")
 
